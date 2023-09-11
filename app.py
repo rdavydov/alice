@@ -31,7 +31,9 @@ def alice():
     user_id = data['session']['user_id']
     text = data['request']['original_utterance']
 
-    # Выведем запрос и данные в консоль
+    # Выведем запрос в консоль с отступами
+    logging.debug("---------- Request ----------")
+    logging.debug(f"User ID: {user_id}")
     logging.debug(f"Request: {data}")
 
     # Проверим, существует ли таблица "users", и создадим её, если нет
@@ -76,12 +78,12 @@ def alice():
                 }
             }
 
-    # Выведем ответ в консоль
+    # Выведем ответ в консоль с отступами
+    logging.debug("---------- Response ----------")
     logging.debug(f"Response: {res}")
 
     conn.close()  # Закрываем соединение с базой данных
     return json.dumps(res)
-
 
 
 if __name__ == '__main__':
