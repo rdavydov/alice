@@ -39,7 +39,7 @@ def create_user(user_id, password, name):
 def check_password(password):
     conn = sqlite3.connect('passwords.db')
     cursor = conn.cursor()
-    cursor.execute("SELECT name FROM users WHERE password=?", (password))
+    cursor.execute("SELECT name FROM users WHERE password=?", (password,))
     result = cursor.fetchone()
     conn.close()
     if result is None:
