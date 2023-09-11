@@ -63,36 +63,17 @@ def alice():
     ''')
     conn.commit()
 
-    if data['session']['new']:
-        # Пользователь новый, создаем аккаунт
-        create_user(user_id_request, text)  # Вызываем функцию для создания пользователя
+    if data['request'] and data['request']['original_utterance'] and len(data['request']['original_utterance']) > 0:
+        text = data['request']['original_utterance']
         res = {
             'version': data['version'],
             'session': data['session'],
             'response': {
-                'text': 'Пароль принят, добро пожаловать!',
+                'text': text,
                 'end_session': False
             }
         }
-    else:
-        if check_password(user_id_request, text):
-            res = {
-                'version': data['version'],
-                'session': data['session'],
-                'response': {
-                    'text': 'Пароль принят, добро пожаловать!',
-                    'end_session': False
-                }
-            }
-        else:
-            res = {
-                'version': data['version'],
-                'session': data['session'],
-                'response': {
-                    'text': 'Неверный пароль. Попробуйте еще раз или введите пароль заново.',
-                    'end_session': False
-                }
-            }
+
 
     # Выведем ответ в консоль с отступами и новыми строками
     logging.debug("---------- Response ----------")
