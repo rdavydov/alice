@@ -1,3 +1,5 @@
+# TZ='Europe/Moscow'
+
 import logging
 from flask import Flask, request
 import json
@@ -12,7 +14,8 @@ sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 app = Flask(__name__)
 
 # Настроим логирование
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+
 
 def create_user(user_id, password):
     conn = sqlite3.connect('passwords.db')
