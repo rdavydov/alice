@@ -34,6 +34,17 @@ def alice():
     # Выведем запрос и данные в консоль
     logging.debug(f"Request: {data}")
 
+    # Проверим, существует ли таблица "users", и создадим её, если нет
+    conn = sqlite3.connect('passwords.db')
+    cursor = conn.cursor()
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS users (
+            user_id TEXT PRIMARY KEY,
+            password TEXT
+        )
+    ''')
+    conn.commit()
+
     if data['session']['new']:
         # Пользователь новый, создаем аккаунт
         create_user(user_id, text)  # Вызываем функцию для создания пользователя
@@ -68,7 +79,9 @@ def alice():
     # Выведем ответ в консоль
     logging.debug(f"Response: {res}")
 
+    conn.close()  # Закрываем соединение с базой данных
     return json.dumps(res)
+
 
 
 if __name__ == '__main__':
