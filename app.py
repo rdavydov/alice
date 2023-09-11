@@ -25,16 +25,25 @@ def check_password(user_id, password):
         return False
     return result[0] == password
 
+import json
+
+# ...
+
+def pretty_print(data):
+    return json.dumps(data, ensure_ascii=False, indent=4)
+
 @app.route('/alice', methods=['POST'])
 def alice():
     data = request.json
-    user_id = data['session']['user_id']
+    user_id_application = data['application']['application_id']
+    user_id_request = data['session']['user_id']
     text = data['request']['original_utterance']
 
-    # Выведем запрос в консоль с отступами
+    # Выведем запрос в консоль с отступами и новыми строками
     logging.debug("---------- Request ----------")
-    logging.debug(f"User ID: {user_id}")
-    logging.debug(f"Request: {data}")
+    logging.debug(f"User ID (from application): {user_id_application}")
+    logging.debug(f"User ID (from request): {user_id_request}")
+    logging.debug(pretty_print(data))
 
     # Проверим, существует ли таблица "users", и создадим её, если нет
     conn = sqlite3.connect('passwords.db')
@@ -49,7 +58,7 @@ def alice():
 
     if data['session']['new']:
         # Пользователь новый, создаем аккаунт
-        create_user(user_id, text)  # Вызываем функцию для создания пользователя
+        create_user(user_id_request, text)  # Вызываем функцию для создания пользователя
         res = {
             'version': data['version'],
             'session': data['session'],
@@ -59,7 +68,7 @@ def alice():
             }
         }
     else:
-        if check_password(user_id, text):
+        if check_password(user_id_request, text):
             res = {
                 'version': data['version'],
                 'session': data['session'],
@@ -78,9 +87,9 @@ def alice():
                 }
             }
 
-    # Выведем ответ в консоль с отступами
+    # Выведем ответ в консоль с отступами и новыми строками
     logging.debug("---------- Response ----------")
-    logging.debug(f"Response: {res}")
+    logging.debug(pretty_print(res))
 
     conn.close()  # Закрываем соединение с базой данных
     return json.dumps(res)
