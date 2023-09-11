@@ -35,13 +35,11 @@ def pretty_print(data):
 @app.route('/alice', methods=['POST'])
 def alice():
     data = request.json
-    user_id_application = data['application']['application_id']
     user_id_request = data['session']['user_id']
     text = data['request']['original_utterance']
 
     # Выведем запрос в консоль с отступами и новыми строками
     logging.debug("---------- Request ----------")
-    logging.debug(f"User ID (from application): {user_id_application}")
     logging.debug(f"User ID (from request): {user_id_request}")
     logging.debug(pretty_print(data))
 
