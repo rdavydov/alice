@@ -7,6 +7,8 @@ import sqlite3
 import sys
 import io
 
+import time  # Добавляем импорт библиотеки time
+
 # Установка кодировки UTF-8 для консоли
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 
@@ -61,6 +63,9 @@ def pretty_print(data):
 def alice():
     data = request.json
     user_id_request = data['session']['user_id']
+
+    # Задержка в 5 секунд
+    time.sleep(5)
 
     res = None  # Инициализируем переменную res
 
