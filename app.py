@@ -2,6 +2,12 @@ import logging
 from flask import Flask, request
 import json
 import sqlite3
+import sys
+import io
+
+# Установка кодировки UTF-8 для консоли
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+
 
 app = Flask(__name__)
 
