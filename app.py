@@ -61,6 +61,8 @@ def alice():
     data = request.json
     user_id_request = data['session']['user_id']
 
+    res = None  # Инициализируем переменную res
+
     if data['request'] and data['request']['original_utterance'] and len(data['request']['original_utterance']) > 0:
         input_text = data['request']['original_utterance'].lower()  # Приведем текст к нижнему регистру для удобства сравнения
 
@@ -94,6 +96,16 @@ def alice():
     # Выведем ответ в консоль с отступами и новыми строками
     logging.debug("---------- Response ----------")
     logging.debug(pretty_print(res))
+
+    if res is None:
+        res = {
+            'version': data['version'],
+            'session': data['session'],
+            'response': {
+                'text': 'Что-то пошло не так',
+                'end_session': False
+            }
+        }
 
     return json.dumps(res)
 
