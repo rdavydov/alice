@@ -65,14 +65,14 @@ def alice():
 
     if data['request'] and data['request']['original_utterance'] and len(data['request']['original_utterance']) > 0:
         text = data['request']['original_utterance']
-        res = {
-            'version': data['version'],
-            'session': data['session'],
-            'response': {
-                'text': text,
-                'end_session': False
-            }
+    res = {
+        'version': data['version'],
+        'session': data['session'],
+        'response': {
+            'text': text,
+            'end_session': False
         }
+    }
 
 
     # Выведем ответ в консоль с отступами и новыми строками
