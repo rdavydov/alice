@@ -102,7 +102,7 @@ def alice():
             'version': data['version'],
             'session': data['session'],
             'response': {
-                'text': 'Для индентификации мне нужен ваш пароль',
+                'text': 'Для идентификации мне нужен ваш пароль',
                 'end_session': False
             }
         }
