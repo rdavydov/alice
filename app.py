@@ -11,7 +11,7 @@ def alice():
             'version': data['version'],
             'session': data['session'],
             'response': {
-                'text': 'Привет! Я ваш новый навык.',
+                'text': 'Привет! Создам тебе аккаунт, придумай для него пароль',
                 'end_session': False
             }
         }
@@ -20,7 +20,7 @@ def alice():
             'version': data['version'],
             'session': data['session'],
             'response': {
-                'text': 'Продолжаем общение.',
+                'text': 'Привет! Я тебя знаю, назови пароль',
                 'end_session': False
             }
         }
