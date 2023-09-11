@@ -52,9 +52,9 @@ def pretty_print(data):
 
 # Тестовые пользователи
 ########################################
-# create_user('1', 'Орлан', 'Роман')
-# create_user('2', 'Ястреб', 'Иван')
-# create_user('3', 'Барс', 'Пётр')
+create_user('1', 'орлан', 'Роман')
+create_user('2', 'ястреб', 'Иван')
+create_user('3', 'барс', 'Пётр')
 ########################################
 
 @app.route('/alice', methods=['POST'])
@@ -64,8 +64,9 @@ def alice():
 
     res = None  # Инициализируем переменную res
 
-    if data['request'] and data['request']['original_utterance'] and len(data['request']['original_utterance']) > 0:
-        input_text = data['request']['original_utterance'].lower()  # Приведем текст к нижнему регистру для удобства сравнения
+    if data['request'] and data['request']['command'] and len(data['request']['command']) > 0:
+        input_text = data['request']['command']
+        logging.info(f"input_text: {input_text}")
 
         if check_password(input_text):
             name = check_password(input_text)
