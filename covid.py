@@ -9,6 +9,69 @@ import logging
 import sqlite3
 
 
+
+def search(cords, rad=1):
+    global cur
+    count = 0  # количество где расстояние меньше километра
+    count_new = 0
+    dis = []  # список из дистанций
+    
+    cords[0] = int(cords[0].replace('.', '').ljust(10, '0'))
+    cords[1] = int(cords[1].replace('.', '').ljust(10, '0'))
+    result = cur.execute(
+        "SELECT width, height, adress, new FROM adresses WHERE (width >= " + str(cords[0] - 9000000 * rad) + ") AND (width <= " + str(cords[0] + 9000000 * rad) +
+        ") AND (height >= " + str(cords[1] - 1562500 * rad) + ") AND (height <= " + str(cords[1] + 1562500 * rad) + ")").fetchall()
+    for i in result:  # считаем расстояния через разницу координат
+        distance = ((
+            (i[1] - cords[1]) / 900) ** 2 + (
+            (i[0] - cords[0]) / 1562.5) ** 2) ** 0.5
+        # print(distance)
+        if distance <= 1000:
+            count += 1
+            if i[3] == 1:
+                count_new += 1
+        dis.append(distance)
+    if count > 0:
+        text = "В радиусе 1 километра от этого дома " + \
+            str(count)  # сколько домов всего
+        # склонение слова для красоты
+        if str(count)[-1] == '1' and str(count)[-2] != '1':
+            text += ' зараженный'
+        else:
+            text += ' зараженных'
+        if count_new == 0:
+            text += ', новых зараженных нет'
+        else:
+            text += ', из них новых зараженных '
+            text += str(count_new)
+        # если расстояние до дома меньше 10 метров, то считает что заболевший в данном доме
+        if int(round(min(dis), 0)) > 10:
+            text += ', при этом ближайший дом находится по адресу: '
+            # адрес дома
+            text += result[dis.index(min(dis))][2].replace('Москва, ', '')
+            text += ' на расстоянии в '
+            text += str(int(round(min(dis), 0)))  # расстояние до него
+            # тоже для красоты
+            if str(int(round(min(dis), 0)))[-1] == '1' and str(int(round(min(dis), 0)))[-2] != '1':
+                text += ' метр от этого дома.'
+            elif str(int(round(min(dis), 0)))[-1] == '2' and str(int(round(min(dis), 0)))[-2] != '1':
+                text += ' метра от этого дома.'
+            elif str(int(round(min(dis), 0)))[-1] == '3' and str(int(round(min(dis), 0)))[-2] != '1':
+                text += ' метра от этого дома.'
+            elif str(int(round(min(dis), 0)))[-1] == '4' and str(int(round(min(dis), 0)))[-2] != '1':
+                text += ' метра от этого дома.'
+            else:
+                text += ' метров от этого дома.'
+        else:
+            # случай, когда заболевший в данном доме
+            text += ' и ближайший зараженный находится в этом доме!'
+    else:
+        # случай, когда заболевших не найдено
+        text = 'В радиусе километра зараженных не обнаружено, поздравляю!'
+        # спрашивает хочет ли еще узнать
+    text += ' Назови новый адрес или скажи "Завершить диалог"'
+    return text
+
 app = Flask(__name__)
 
 
