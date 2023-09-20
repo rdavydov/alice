@@ -113,6 +113,7 @@ def alice():
             'session': data['session'],
             'response': {
                 'text': f'{poem}',
+                'tts': f'{poem}',
                 'end_session': False
             }
         }
