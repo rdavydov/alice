@@ -7,15 +7,13 @@ import random
 import sys
 import io
 
-# import time  # Добавляем импорт библиотеки time
-
 # Установка кодировки UTF-8 для консоли
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 
 from werkzeug.middleware.dispatcher import DispatcherMiddleware
 from werkzeug.wrappers import Response
 
-# Add this BEFORE creating the Flask app
+# Middleware to handle reverse proxy
 class ReverseProxied:
     def __init__(self, app):
         self.app = app
@@ -30,11 +28,10 @@ class ReverseProxied:
         return self.app(environ, start_response)
 
 app = Flask(__name__)
-app.wsgi_app = ReverseProxied(app.wsgi_app)  # Add this line after creating app
+app.wsgi_app = ReverseProxied(app.wsgi_app)
 
 # Настроим логирование
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
-
 
 # Функции
 # ---------------------------------
@@ -46,118 +43,159 @@ def is_int(data):
         return False
 
 def generate_poem():
-    with open('config/dict.json', 'r', encoding='utf-8') as dict_file:
-        vocabular = json.load(dict_file)
+    try:
+        with open('config/dict.json', 'r', encoding='utf-8') as dict_file:
+            vocabular = json.load(dict_file)
 
-    random_values = []
+        random_values = []
+        for i in range(len(vocabular)):
+            random_values.append(random.choice(vocabular[i]))
 
-    for i in range(len(vocabular)):
-        random_values.append(random.choice(vocabular[i]))
+        with open('config/structure.json', 'r', encoding='utf-8') as structure_file:
+            structure = json.load(structure_file)
 
-    with open('config/structure.json', 'r', encoding='utf-8') as structure_file:
-        structure = json.load(structure_file)
+        poem = []
+        for i in range(len(structure)):
+            element = ""
+            for j in range(len(structure[i])):
+                if is_int(structure[i][j]):
+                    element += random_values[structure[i][j]] + " "
+                else:
+                    element += structure[i][j] + " "
+            poem.append(element.rstrip())  # Удаление лишних пробелов в конце строки
 
-    poem = []
-
-    for i in range(len(structure)):
-        element = ""
-        for j in range(len(structure[i])):
-            if is_int(structure[i][j]):
-                element += random_values[structure[i][j]] + " "
-            else:
-                element += structure[i][j] + " "
-        poem.append(element.rstrip())  # Удаление лишних пробелов в конце строки
-
-    return poem
+        return poem
+    except Exception as e:
+        logging.error(f"Error generating poem: {str(e)}")
+        return ["Произошла ошибка при генерации стиха"]
 
 def pretty_print(data):
     return json.dumps(data, ensure_ascii=False, indent=4)
+
+def get_tokens(data):
+    """Safely extract tokens from request"""
+    try:
+        # Try to get tokens from NLU
+        return data['request']['nlu']['tokens']
+    except KeyError:
+        try:
+            # Fallback to splitting command text
+            command = data['request']['command']
+            return command.split() if command else []
+        except KeyError:
+            return []
 # ---------------------------------
 
+# Define phrase lists for better maintainability
+STOP_PHRASES = [
+    ['закончить', 'диалог'],
+    ['пока'],
+    ['всё'],
+    ['хватит'],
+    ['стоп'],
+    ['надоело'],
+    ['остановись'],
+    ['завершить', 'диалог']
+]
+
+HELP_PHRASES = [
+    ['что', 'ты', 'умеешь'],
+    ['помощь']
+]
 
 @app.route('/alice', methods=['POST'])
 def alice():
-    data = request.json
-    user_id_request = data['session']['user_id']
+    try:
+        data = request.json
+        if not data:
+            logging.error("Received empty request")
+            return json.dumps({
+                'version': '1.0',
+                'response': {'text': 'Ошибка: пустой запрос', 'end_session': False}
+            }), 400
 
-    # Задержка в 5 секунд
-    # time.sleep(5)
+        # Safely get session and user ID
+        session = data.get('session', {})
+        user_id_request = session.get('user_id', 'unknown')
+        
+        res = None
+        request_data = data.get('request', {})
+        command = request_data.get('command', '')
+        
+        # Log request immediately for debugging
+        logging.debug("---------- Request ----------")
+        logging.debug(f"User ID: {user_id_request}")
+        logging.debug(pretty_print(data))
 
-    res = None  # Инициализируем переменную res
+        # Process tokens safely
+        tokens = get_tokens(data)
+        token_list_lower = [token.lower() for token in tokens]
 
-    if data['request'] and data['request']['command'] and len(data['request']['command']) > 0:
-        input_text = data['request']['command']
-        logging.info(f"input_text: {input_text}")
-
-        try: # на всякий случай)
-            if list(map(lambda x: x.lower(), data['request']['nlu']['tokens'])) == ['закончить', 'диалог'] or \
-            list(map(lambda x: x.lower(), data['request']['nlu']['tokens'])) == ['пока'] or \
-            list(map(lambda x: x.lower(), data['request']['nlu']['tokens'])) == ['всё'] or \
-            list(map(lambda x: x.lower(), data['request']['nlu']['tokens'])) == ['хватит'] or \
-            list(map(lambda x: x.lower(), data['request']['nlu']['tokens'])) == ['стоп'] or \
-            list(map(lambda x: x.lower(), data['request']['nlu']['tokens'])) == ['надоело'] or \
-            list(map(lambda x: x.lower(), data['request']['nlu']['tokens'])) == ['остановись'] or \
-            list(map(lambda x: x.lower(), data['request']['nlu']['tokens'])) == ['завершить', 'диалог']:
-                res = {
-                    'version': data['version'],
-                    'session': data['session'],
-                    'response': {
-                        'text': 'Пока! Возвращайся за новыми стихами!',
-                        'end_session': True
-                    }
-                }
-                return json.dumps(res)
-        except Exception:
-            pass
-
-        # что ты умеешь? - обязательный вопрос в навыке Алисы
-        if list(map(lambda x: x.lower(), data['request']['nlu']['tokens'])) == ['что', 'ты', 'умеешь'] or \
-           list(map(lambda x: x.lower(), data['request']['nlu']['tokens'])) == ['помощь']:
+        # Check for stop phrases
+        if token_list_lower in STOP_PHRASES:
             res = {
-                'version': data['version'],
-                'session': data['session'],
+                'version': data.get('version', '1.0'),
+                'session': session,
+                'response': {
+                    'text': 'Пока! Возвращайся за новыми стихами!',
+                    'end_session': True
+                }
+            }
+        
+        # Check for help phrases
+        elif token_list_lower in HELP_PHRASES:
+            res = {
+                'version': data.get('version', '1.0'),
+                'session': session,
                 'response': {
                     'text': 'Я - стихоплёт! Создаю стихи по одному известному демотиватору. Такие стихи плету, закачаешься! Скажи мне любое слово, а в ответ получишь стих! Если надоем, то скажи "стоп" или "хватит". Приятного стихопрослушивания!',
                     'end_session': False
                 }
             }
-            return json.dumps(res)
-
-        poem = '\n'.join(generate_poem())
-        logging.info(f"poem:\n{poem}")
-
-        res = {
-            'version': data['version'],
-            'session': data['session'],
-            'response': {
-                'text': f'{poem}',
-                'tts': f'{poem}',
-                'end_session': False
+        
+        # Generate poem if we have a command
+        elif command:
+            logging.info(f"Command received: {command}")
+            poem = '\n'.join(generate_poem())
+            logging.info(f"Generated poem:\n{poem}")
+            
+            res = {
+                'version': data.get('version', '1.0'),
+                'session': session,
+                'response': {
+                    'text': poem,
+                    'tts': poem,
+                    'end_session': False
+                }
             }
-        }
+        
+        # Fallback to help message
+        if res is None:
+            res = {
+                'version': data.get('version', '1.0'),
+                'session': session,
+                'response': {
+                    'text': 'Я - стихоплёт! Создаю стихи по одному известному демотиватору. Такие стихи плету, закачаешься! Скажи мне любое слово, а в ответ получишь стих! Если надоем, то скажи "стоп" или "хватит". Приятного стихопрослушивания!',
+                    'end_session': False
+                }
+            }
+
+        # Log response
+        logging.debug("---------- Response ----------")
+        logging.debug(pretty_print(res))
+
         return json.dumps(res)
-
-    # Выведем запрос в консоль с отступами и новыми строками
-    logging.debug("---------- Request ----------")
-    logging.debug(f"User ID (from request): {user_id_request}")
-    logging.debug(pretty_print(data))
-
-    # Выведем ответ в консоль с отступами и новыми строками
-    logging.debug("---------- Response ----------")
-    logging.debug(pretty_print(res))
-
-    if res is None:
-        res = {
-            'version': data['version'],
-            'session': data['session'],
+    
+    except Exception as e:
+        logging.exception("Unhandled exception in alice()")
+        return json.dumps({
+            'version': '1.0',
             'response': {
-                'text': 'Я - стихоплёт! Создаю стихи по одному известному демотиватору. Такие стихи плету, закачаешься! Скажи мне любое слово, а в ответ получишь стих! Если надоем, то скажи "стоп" или "хватит". Приятного стихопрослушивания!',
+                'text': 'Произошла внутренняя ошибка при обработке запроса',
                 'end_session': False
             }
-        }
-
-    return json.dumps(res)
+        }), 500
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=80)
+    app.run(host='0.0.0.0', port=8443)
