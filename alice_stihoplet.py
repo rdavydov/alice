@@ -103,7 +103,7 @@ HELP_PHRASES = [
     ['помощь']
 ]
 
-@app.route('/alice', methods=['POST'])
+@app.route('/', methods=['POST'])
 def alice():
     try:
         data = request.json
