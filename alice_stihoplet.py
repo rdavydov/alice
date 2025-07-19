@@ -12,7 +12,25 @@ import io
 # Установка кодировки UTF-8 для консоли
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 
+from werkzeug.middleware.dispatcher import DispatcherMiddleware
+from werkzeug.wrappers import Response
+
+# Add this BEFORE creating the Flask app
+class ReverseProxied:
+    def __init__(self, app):
+        self.app = app
+
+    def __call__(self, environ, start_response):
+        script_name = environ.get('HTTP_X_SCRIPT_NAME', '')
+        if script_name:
+            environ['SCRIPT_NAME'] = script_name
+            path_info = environ['PATH_INFO']
+            if path_info.startswith(script_name):
+                environ['PATH_INFO'] = path_info[len(script_name):]
+        return self.app(environ, start_response)
+
 app = Flask(__name__)
+app.wsgi_app = ReverseProxied(app.wsgi_app)  # Add this line after creating app
 
 # Настроим логирование
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
